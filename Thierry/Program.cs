@@ -129,6 +129,15 @@ namespace Thierry
                     await PrintChannelMessage(msg.Channel, message);
                     break;
                 }
+                case "!Thierry":
+                {
+                    if (msg.MentionedUsers.Count == 1)
+                    {
+                        var mention = msg.MentionedUsers.First();
+                        await PrintChannelMessage(msg.Channel, string.Format("{0}! {0}! {0}!", mention.Mention));
+                    }
+                            break;
+                }
                 default:
                 {
                     if (!user.Roles.Contains(_guild.HatminRole))
