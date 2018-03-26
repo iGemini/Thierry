@@ -80,8 +80,7 @@ namespace Thierry
 
             var user = _guild.GuildObject.GetUser(msg.Author.Id);
 
-            if (user.Roles.Contains(_guild.HatminRole) && msg.Content.StartsWith("!givehat") &&
-                msg.MentionedUsers.Count == 1)
+            if (user.Roles.Contains(_guild.HatminRole) && msg.MentionedUsers.Count == 1)
             {
                 if (!_setupDone)
                 {
@@ -90,37 +89,79 @@ namespace Thierry
                     return;
                 }
 
-                _guild.HatBeingMoved = true;
-                if (_guild.LastHat != null)
-                {
-                    await _guild.LastHat.RemoveRoleAsync(_guild.HatRole);
-                    UpdateVoiceChannel();
-                }
 
-                _guild.LastHat = _guild.GuildObject.GetUser(msg.MentionedUsers.First().Id);
-                await _guild.LastHat.AddRoleAsync(_guild.HatRole);
+                if (msg.Content.StartsWith("!givehat"))
+                {
+                    GiveHat(msg.MentionedUsers.First());
+                }
+                
+            }
+            else
+            {
+                if (msg.Content.StartsWith("!help"))
+                {
+                    //print helptext
+                    //json help file maken
+                    string message = "Ze heeft weeral gemorst, film het maar";
+                    PrintChannelMessage(msg.Channel, message);
+
+                }
+                else if (msg.Content.StartsWith("!beepboop"))
+                {
+                    PrintChannelMessage(msg.Channel, "Ik ben een robot!");
+                    //print "ik ben een robot"
+                }
+                else if (msg.Content.StartsWith("!TRUT"))
+                {
+                    string message = "Als er al spanningen zijn geweest, dan zijn die nu allemaal weg, daarmee hebben we die prijs gewonnen eh";
+                    PrintChannelMessage(msg.Channel, message);
+                }
+                else  if (msg.Content.StartsWith("!"))
+                {
+                    //Any other "command" by not admins should be punished"
+                    string message = string.Format("Maar allee {0}, wat doet gij nu? Precies ons Lindsey die bezig is", user.Nickname);
+                    PrintChannelMessage(msg.Channel, message);
+                }
+            }
+        }
+
+        private static async void GiveHat(SocketUser user)
+        {
+            _guild.HatBeingMoved = true;
+            if (_guild.LastHat != null)
+            {
+                await _guild.LastHat.RemoveRoleAsync(_guild.HatRole);
                 UpdateVoiceChannel();
             }
+
+            _guild.LastHat = _guild.GuildObject.GetUser(user.Id);
+            //_guild.LastHat = _guild.GuildObject.GetUser(msg.MentionedUsers.First().Id);
+            await _guild.LastHat.AddRoleAsync(_guild.HatRole);
+            UpdateVoiceChannel();
+        }
+        private static async void PrintChannelMessage(ISocketMessageChannel channel, string message)
+        {
+            await channel.SendMessageAsync(message);
         }
 
         private static async Task GuildMemberUpdated(SocketGuildUser before, SocketGuildUser after)
         {
-            if (!_setupDone) return;
-            if (_guild.HatBeingMoved) return;
-
-            if (before.Id == _guild.LastHat?.Id && !after.Roles.Contains(_guild.HatRole))
+            if (_setupDone)
             {
-                await Log(string.Format("Hat illegally removed from {0}. Reassigning hat to {0}.", after.Username));
-                await after.AddRoleAsync(_guild.HatRole);
-            }
+                if (before.Id == _guild.LastHat?.Id && !after.Roles.Contains(_guild.HatRole))
+                {
+                    await Log(string.Format("Hat illegally removed from {0}. Reassigning hat to {0}.", after.Username));
+                    await after.AddRoleAsync(_guild.HatRole);
+                }
 
-            if (after.Roles.Contains(_guild.HatRole) && after.Id != _guild.LastHat?.Id)
-            {
-                await Log(string.Format("Hat illegally given to {0}. Removing hat from {0}.", after.Username));
-                await after.RemoveRoleAsync(_guild.HatRole);
-            }
+                if (after.Roles.Contains(_guild.HatRole) && after.Id != _guild.LastHat?.Id)
+                {
+                    await Log(string.Format("Hat illegally given to {0}. Removing hat from {0}.", after.Username));
+                    await after.RemoveRoleAsync(_guild.HatRole);
+                }
 
-            _guild.HatBeingMoved = false;
+                _guild.HatBeingMoved = false;
+            }
         }
 
         // Because Discord does not automatically unmute someone after they've been given speaking rights.
@@ -181,7 +222,7 @@ namespace Thierry
 
         private static void CheckHat()
         {
-            if (!_guild.HatRole.Members.Any()) return;
+            if (_guild.HatRole.Members.Count() <= 1) return;
             _guild.LastHat = _guild.HatRole.Members.Last();
             _guild.HatRole.Members.AsParallel().ForAll(
                 async x =>
