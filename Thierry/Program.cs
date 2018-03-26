@@ -15,7 +15,7 @@ namespace Thierry
         public static readonly DiscordSocketClient Client = new DiscordSocketClient();
         private static string _token;
         private static Guild _guild;
-        private static bool _setupDone;
+        private static bool _ready;
         private static bool _idmode;
         private static IConfigurationRoot _config;
 
@@ -47,6 +47,8 @@ namespace Thierry
 
         private static async Task Ready()
         {
+            await Log("Ready for action!");
+
             if (_idmode)
             {
                 GetIDs();
@@ -65,7 +67,7 @@ namespace Thierry
 
             CheckHat();
 
-            _setupDone = true;
+            _ready = true;
         }
 
         private static async Task Log(string msg)
@@ -75,37 +77,95 @@ namespace Thierry
 
         private static async Task MessageReceived(SocketMessage msg)
         {
+            // TODO: Add multi-guild support.
+
+            // var guild = (msg.Channel as SocketGuildChannel)?.Guild;
+
             await Log(
                 $"Channel id: {msg.Channel.Id}, Channel name: {msg.Channel.Name}, Author id: {msg.Author.Id}, Author: {msg.Author.Username}, Message: {msg.Content}");
 
-            var user = _guild.GuildObject.GetUser(msg.Author.Id);
-
-            if (user.Roles.Contains(_guild.HatminRole) && msg.Content.StartsWith("!givehat") &&
-                msg.MentionedUsers.Count == 1)
+            if (!msg.Content.StartsWith("!")) return;
+            if (!_ready)
             {
-                if (!_setupDone)
-                {
-                    await msg.Channel.SendMessageAsync("I am performing initial setup. Ignoring command.");
-                    var t = (msg.Channel as SocketGuildChannel)?.Guild;
-                    return;
-                }
+                await msg.Channel.SendMessageAsync("I am performing initial setup. Ignoring command.");
+                return;
+            }
 
-                _guild.HatBeingMoved = true;
-                if (_guild.LastHat != null)
-                {
-                    await _guild.LastHat.RemoveRoleAsync(_guild.HatRole);
-                    UpdateVoiceChannel();
-                }
+            var user = _guild.SocketGuild.GetUser(msg.Author.Id);
+            var messageSplit = msg.Content.Split(' ');
 
-                _guild.LastHat = _guild.GuildObject.GetUser(msg.MentionedUsers.First().Id);
-                await _guild.LastHat.AddRoleAsync(_guild.HatRole);
+            switch (messageSplit[0])
+            {
+                case "!givehat":
+                {
+                    if (!user.Roles.Contains(_guild.HatminRole))
+                    {
+                        Punish(_guild.SocketGuild.GetUser(msg.Author.Id).Nickname, msg.Channel);
+                        break;
+                    }
+
+                    if (msg.MentionedUsers.Count == 1)
+                        GiveHat(msg.MentionedUsers.First());
+                    break;
+                }
+                case "!help":
+                {
+                    //print helptext
+                    //json help file maken
+                    const string message = "Ze heeft weeral gemorst, film het maar.";
+                    await PrintChannelMessage(msg.Channel, message);
+                    break;
+                }
+                case "!beepboop":
+                {
+                    const string message = "Ik ben een robot!";
+                    await PrintChannelMessage(msg.Channel, message);
+                    break;
+                }
+                case "!TRUT":
+                {
+                    const string message =
+                        "Als er al spanningen zijn geweest, dan zijn die nu allemaal weg, daarmee hebben we die prijs gewonnen eh.";
+                    await PrintChannelMessage(msg.Channel, message);
+                    break;
+                }
+                default:
+                {
+                    if (!user.Roles.Contains(_guild.HatminRole))
+                        Punish(_guild.SocketGuild.GetUser(msg.Author.Id).Nickname, msg.Channel);
+                    break;
+                }
+            }
+        }
+
+        private static async void Punish(string nickName, ISocketMessageChannel channel)
+        {
+            var message = string.Format("Maar allee {0}, wat doet gij nu? Precies ons Lindsey die bezig is!", nickName);
+            await PrintChannelMessage(channel, message);
+        }
+
+        private static async void GiveHat(SocketUser user)
+        {
+            _guild.HatBeingMoved = true;
+            if (_guild.LastHat != null)
+            {
+                await _guild.LastHat.RemoveRoleAsync(_guild.HatRole);
                 UpdateVoiceChannel();
             }
+
+            _guild.LastHat = _guild.SocketGuild.GetUser(user.Id);
+            await _guild.LastHat.AddRoleAsync(_guild.HatRole);
+            UpdateVoiceChannel();
+        }
+
+        private static async Task PrintChannelMessage(ISocketMessageChannel channel, string message)
+        {
+            await channel.SendMessageAsync(message);
         }
 
         private static async Task GuildMemberUpdated(SocketGuildUser before, SocketGuildUser after)
         {
-            if (!_setupDone) return;
+            if (!_ready) return;
             if (_guild.HatBeingMoved) return;
 
             if (before.Id == _guild.LastHat?.Id && !after.Roles.Contains(_guild.HatRole))
@@ -133,7 +193,7 @@ namespace Thierry
             await _guild.LastHat.ModifyAsync(x => x.Channel = channel);
         }
 
-        private static async Task SendLindsay(string path)
+        private static async Task SendLindsey(string path)
         {
             // Get the audio channel
             var channel = _guild.LastHat.VoiceChannel;

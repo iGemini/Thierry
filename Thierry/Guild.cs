@@ -9,14 +9,14 @@ namespace Thierry
     {
         public Guild(ulong guildId, ulong mutedRoleId, ulong hatRoleId, ulong hatminRoleId, ulong afkChannelId)
         {
-            GuildObject = Program.Client.GetGuild(guildId);
-            MutedRole = GuildObject.GetRole(mutedRoleId);
-            HatRole = GuildObject.GetRole(hatRoleId);
-            HatminRole = GuildObject.GetRole(hatminRoleId);
-            AfkVoiceChannel = GuildObject.GetVoiceChannel(afkChannelId);
+            SocketGuild = Program.Client.GetGuild(guildId);
+            MutedRole = SocketGuild.GetRole(mutedRoleId);
+            HatRole = SocketGuild.GetRole(hatRoleId);
+            HatminRole = SocketGuild.GetRole(hatminRoleId);
+            AfkVoiceChannel = SocketGuild.GetVoiceChannel(afkChannelId);
         }
 
-        public SocketGuild GuildObject { get; }
+        public SocketGuild SocketGuild { get; }
 
         public SocketRole HatRole { get; }
 
