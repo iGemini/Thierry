@@ -1,6 +1,9 @@
 # Thierry
 A joke that ran a bit out of hand.
 
+[![Lindsey](http://img.youtube.com/vi/v39Xh4hk8Jw/0.jpg)](http://www.youtube.com/watch?v=v39Xh4hk8Jw)
+
+
 Example appsettings.json file
 ```json
 {
