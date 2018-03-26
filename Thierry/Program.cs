@@ -105,22 +105,22 @@ namespace Thierry
 
         private static async Task GuildMemberUpdated(SocketGuildUser before, SocketGuildUser after)
         {
-            if (_setupDone)
+            if (!_setupDone) return;
+            if (_guild.HatBeingMoved) return;
+
+            if (before.Id == _guild.LastHat?.Id && !after.Roles.Contains(_guild.HatRole))
             {
-                if (before.Id == _guild.LastHat?.Id && !after.Roles.Contains(_guild.HatRole))
-                {
-                    await Log(string.Format("Hat illegally removed from {0}. Reassigning hat to {0}.", after.Username));
-                    await after.AddRoleAsync(_guild.HatRole);
-                }
-
-                if (after.Roles.Contains(_guild.HatRole) && after.Id != _guild.LastHat?.Id)
-                {
-                    await Log(string.Format("Hat illegally given to {0}. Removing hat from {0}.", after.Username));
-                    await after.RemoveRoleAsync(_guild.HatRole);
-                }
-
-                _guild.HatBeingMoved = false;
+                await Log(string.Format("Hat illegally removed from {0}. Reassigning hat to {0}.", after.Username));
+                await after.AddRoleAsync(_guild.HatRole);
             }
+
+            if (after.Roles.Contains(_guild.HatRole) && after.Id != _guild.LastHat?.Id)
+            {
+                await Log(string.Format("Hat illegally given to {0}. Removing hat from {0}.", after.Username));
+                await after.RemoveRoleAsync(_guild.HatRole);
+            }
+
+            _guild.HatBeingMoved = false;
         }
 
         // Because Discord does not automatically unmute someone after they've been given speaking rights.
@@ -181,7 +181,7 @@ namespace Thierry
 
         private static void CheckHat()
         {
-            if (_guild.HatRole.Members.Count() <= 1) return;
+            if (!_guild.HatRole.Members.Any()) return;
             _guild.LastHat = _guild.HatRole.Members.Last();
             _guild.HatRole.Members.AsParallel().ForAll(
                 async x =>
