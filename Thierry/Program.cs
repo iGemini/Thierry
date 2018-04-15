@@ -100,12 +100,29 @@ namespace Thierry
                 {
                     if (!user.Roles.Contains(_guild.HatminRole))
                     {
-                        Punish(_guild.SocketGuild.GetUser(msg.Author.Id).Nickname, msg.Channel);
+                        Punish(msg.Author, msg.Channel);
                         break;
                     }
 
                     if (msg.MentionedUsers.Count == 1)
                         GiveHat(msg.MentionedUsers.First());
+                    break;
+                }
+                case "!takehat":
+                {
+                    if (!user.Roles.Contains(_guild.HatminRole))
+                    {
+                        Punish(msg.Author, msg.Channel);
+                        break;
+                    }
+
+                    if (_guild.SocketGuild.GetRole(_guild.HatRole.Id).Members.Any())
+                    {
+                        await PrintChannelMessage(msg.Channel,
+                            string.Format("{0} The Lord giveth, and the Lord taketh away.", _guild.LastHat.Mention));
+                        RemoveHat();
+                    }
+
                     break;
                 }
                 case "!help":
@@ -141,15 +158,15 @@ namespace Thierry
                 default:
                 {
                     if (!user.Roles.Contains(_guild.HatminRole))
-                        Punish(_guild.SocketGuild.GetUser(msg.Author.Id).Nickname, msg.Channel);
+                        Punish(msg.Author, msg.Channel);
                     break;
                 }
             }
         }
 
-        private static async void Punish(string nickName, ISocketMessageChannel channel)
+        private static async void Punish(SocketUser user, ISocketMessageChannel channel)
         {
-            var message = string.Format("Maar allee {0}, wat doet gij nu? Precies ons Lindsey die bezig is!", nickName);
+            var message = string.Format("Maar allee {0}, wat doet gij nu? Precies ons Lindsey die bezig is!", user.Mention);
             await PrintChannelMessage(channel, message);
         }
 
@@ -165,6 +182,12 @@ namespace Thierry
             _guild.LastHat = _guild.SocketGuild.GetUser(user.Id);
             await _guild.LastHat.AddRoleAsync(_guild.HatRole);
             UpdateVoiceChannel();
+        }
+
+        private static void RemoveHat()
+        {
+            _guild.LastHat.RemoveRoleAsync(_guild.HatRole);
+            _guild.LastHat = null;
         }
 
         private static async Task PrintChannelMessage(ISocketMessageChannel channel, string message)
