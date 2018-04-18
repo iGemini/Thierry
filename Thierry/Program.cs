@@ -12,7 +12,8 @@ namespace Thierry
 {
     internal static class Program
     {
-        public static readonly DiscordSocketClient Client = new DiscordSocketClient();
+        public static readonly DiscordSocketClient Client =
+            new DiscordSocketClient(new DiscordSocketConfig {LogLevel = LogSeverity.Verbose});
         private static string _token;
         private static Guild _guild;
         private static bool _ready;
@@ -34,6 +35,7 @@ namespace Thierry
         private static async Task MainAsync()
         {
             // Set up events.
+            Client.Log += Log;
             Client.Ready += Ready;
             Client.MessageReceived += MessageReceived;
             Client.GuildMemberUpdated += GuildMemberUpdated;
@@ -68,6 +70,11 @@ namespace Thierry
             CheckHat();
 
             _ready = true;
+        }
+
+        private static async Task Log(LogMessage msg)
+        {
+            await Log("[API] [" + msg.Severity + "] [" + msg.Source + "] " + msg.Message);
         }
 
         private static async Task Log(string msg)
