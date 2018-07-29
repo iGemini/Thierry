@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Discord.WebSocket;
+﻿using Discord.WebSocket;
 
 namespace Thierry
 {
@@ -16,18 +13,18 @@ namespace Thierry
             AfkVoiceChannel = SocketGuild.GetVoiceChannel(afkChannelId);
         }
 
-        public SocketGuild SocketGuild { get; }
+        public SocketVoiceChannel AfkVoiceChannel { get; }
 
-        public SocketRole HatRole { get; }
-
-        public SocketRole MutedRole { get; }
+        public bool HatBeingMoved { get; set; }
 
         public SocketRole HatminRole { get; }
 
-        public SocketVoiceChannel AfkVoiceChannel { get; }
+        public SocketRole HatRole { get; }
 
         public SocketGuildUser LastHat { get; set; }
 
-        public bool HatBeingMoved { get; set; }
+        public SocketRole MutedRole { get; }
+
+        public SocketGuild SocketGuild { get; }
     }
 }
