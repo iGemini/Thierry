@@ -38,7 +38,7 @@ namespace Thierry
                 async x =>
                 {
                     if (x == Guild.LastHat) return;
-                    await Log(string.Format("User id: {0}, Username: {1}", x.Id, x.Username));
+                    await Log($"User id: {x.Id}, Username: {x.Username}");
                     await x.RemoveRoleAsync(Guild.HatRole);
                 });
         }
@@ -47,19 +47,19 @@ namespace Thierry
         {
             foreach (var guild in Client.Guilds)
             {
-                await Log(string.Format("Guild id: {0}, Guild name: {1}", guild.Id, guild.Name));
+                await Log($"Guild id: {guild.Id}, Guild name: {guild.Name}");
 
                 await Log("Roles:");
                 foreach (var role in guild.Roles.OrderBy(role => role.Id))
-                    await Log(string.Format("Role id: {0}, Role name: {1}", role.Id, role.Name));
+                    await Log($"Role id: {role.Id}, Role name: {role.Name}");
 
                 await Log("Text Channels:");
                 foreach (var channel in guild.TextChannels.OrderBy(channel => channel.Id))
-                    await Log(string.Format("Channel id: {0}, Channel name: {1}", channel.Id, channel.Name));
+                    await Log($"Channel id: {channel.Id}, Channel name: {channel.Name}");
 
                 await Log("Voice Channels:");
                 foreach (var channel in guild.VoiceChannels.OrderBy(channel => channel.Id))
-                    await Log(string.Format("Channel id: {0}, Channel name: {1}", channel.Id, channel.Name));
+                    await Log($"Channel id: {channel.Id}, Channel name: {channel.Name}");
             }
         }
 
@@ -84,13 +84,13 @@ namespace Thierry
 
             if (before.Id == Guild.LastHat?.Id && !after.Roles.Contains(Guild.HatRole))
             {
-                await Log(string.Format("Hat illegally removed from {0}. Reassigning hat to {0}.", after.Username));
+                await Log($"Hat illegally removed from {after.Username}. Reassigning hat to {after.Username}.");
                 await after.AddRoleAsync(Guild.HatRole);
             }
 
             if (after.Roles.Contains(Guild.HatRole) && after.Id != Guild.LastHat?.Id)
             {
-                await Log(string.Format("Hat illegally given to {0}. Removing hat from {0}.", after.Username));
+                await Log($"Hat illegally given to {after.Username}. Removing hat from {after.Username}.");
                 await after.RemoveRoleAsync(Guild.HatRole);
             }
 
@@ -150,7 +150,7 @@ namespace Thierry
         public async Task MessageReceived(SocketMessage msg)
         {
             // Don't process the command if it was a System Message
-            if (!(msg is SocketUserMessage message)) return;
+            if (!(msg is SocketUserMessage message) || message.Author.IsBot) return;
             // Log the message
             await Log(
                 $"Channel id: {msg.Channel.Id}, Channel name: {message.Channel.Name}, Author id: {message.Author.Id}, Author: {message.Author.Username}, Message: {message.Content}");
@@ -167,15 +167,16 @@ namespace Thierry
             if (!(message.HasCharPrefix('!', ref argPos) ||
                   message.HasMentionPrefix(Client.CurrentUser, ref argPos))) return;
             // Create a Command Context
-            var context = new CommandContext(Client, message);
+            var context = new SocketCommandContext(Client, message);
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully)
             var result = await _commands.ExecuteAsync(context, argPos, _services);
             if (!result.IsSuccess)
+            {
                 if (result.Error == CommandError.UnknownCommand)
                     return;
-
-            await context.Channel.SendMessageAsync(result.ErrorReason);
+                await context.Channel.SendMessageAsync(result.ErrorReason);
+            }
         }
 
         public async Task Ready()

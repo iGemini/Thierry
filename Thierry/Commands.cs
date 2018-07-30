@@ -5,7 +5,7 @@ using Discord.WebSocket;
 
 namespace Thierry
 {
-    public class Commands : ModuleBase
+    public class Commands : ModuleBase<SocketCommandContext>
     {
         private readonly Program _prog = new Program();
 
@@ -37,8 +37,7 @@ namespace Thierry
         {
             if (Program.Guild.SocketGuild.GetRole(Program.Guild.HatRole.Id).Members.Any())
             {
-                await ReplyAsync(string.Format("{0} The Lord giveth, and the Lord taketh away.",
-                    Program.Guild.LastHat.Mention));
+                await ReplyAsync($"{Program.Guild.LastHat.Mention} The Lord giveth, and the Lord taketh away.");
                 _prog.RemoveHat();
             }
         }
@@ -46,7 +45,7 @@ namespace Thierry
         [Command("Thierry")]
         public async Task Thierry(SocketGuildUser user)
         {
-            await ReplyAsync(string.Format("{0}! {0}! {0}!", user.Mention));
+            await ReplyAsync($"{user.Mention}! {user.Mention}! {user.Mention}!");
         }
 
         [Command("TRUT")]

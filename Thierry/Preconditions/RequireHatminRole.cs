@@ -14,7 +14,7 @@ namespace Thierry
             if (sender.Roles.Contains(Program.Guild.HatminRole))
                 return PreconditionResult.FromSuccess();
             return PreconditionResult.FromError(
-                string.Format("Maar allee {0}, wat doet gij nu? Precies ons Lindsey die bezig is!", sender.Mention));
+                $"Maar allee {sender.Mention}, wat doet gij nu? Precies ons Lindsey die bezig is!");
         }
     }
 }
