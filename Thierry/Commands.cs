@@ -30,6 +30,12 @@ namespace Thierry
             await ReplyAsync("Ze heeft weeral gemorst, film het maar.");
         }
 
+        [Command("lindsey")]
+        public async Task Lindsey()
+        {
+            await ReplyAsync("https://www.youtube.com/watch?v=v39Xh4hk8Jw");
+        }
+
         [Command("takehat")]
         [Alias("removehat")]
         [RequireHatminRole]
