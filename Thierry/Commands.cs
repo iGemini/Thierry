@@ -8,7 +8,7 @@ namespace Thierry
 {
     public class Commands : ModuleBase<SocketCommandContext>
     {
-        private readonly List<HoekUser> _hoek = new List<HoekUser>();
+        private static readonly List<HoekUser> Hoek = new List<HoekUser>();
 
         [Command("beepboop")]
         public async Task Beepboop()
@@ -32,13 +32,19 @@ namespace Thierry
         }
 
         [Command("indenhoek")]
+        [RequireHatminRole]
         public async Task InDenHoek(SocketGuildUser user)
         {
-            await user.AddRoleAsync(Program.Guild.MutedRole);
-            foreach (var hoekUser in _hoek)
+            foreach (var hoekUser in Hoek)
                 if (hoekUser == user)
+                {
+                    await ReplyAsync($"{user.Mention} staat al in den hoek.");
                     return;
-            _hoek.Add(new HoekUser(user));
+                }
+
+            await user.AddRoleAsync(Program.Guild.MutedRole);
+            Hoek.Add(new HoekUser(user));
+            await ReplyAsync($"{user.Mention} staat nu in den hoek.");
         }
 
         [Command("lindsey")]
@@ -73,23 +79,23 @@ namespace Thierry
         }
 
         [Command("uitdenhoek")]
+        [RequireHatminRole]
         public async Task UitDenHoek(SocketGuildUser user)
         {
             HoekUser temp = null;
 
-            foreach (var hoekUser in _hoek)
-            {
+            foreach (var hoekUser in Hoek)
                 if (hoekUser == user)
                     temp = hoekUser;
-            }
 
             if (temp == null) return;
             temp.Votes++;
 
-            if (temp.Votes == 2)
+            if (temp.Votes >= 2)
             {
                 await user.RemoveRoleAsync(Program.Guild.MutedRole);
-                _hoek.Remove(temp);
+                Hoek.Remove(temp);
+                await ReplyAsync($"{temp.User.Mention} has been released.");
                 return;
             }
 

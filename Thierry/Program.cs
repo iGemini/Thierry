@@ -26,6 +26,13 @@ namespace Thierry
         private CommandService _commands;
         private IServiceProvider _services;
 
+        public static void Main(string[] args)
+        {
+            Prog = new Program();
+            Prog.MainAsync(args).GetAwaiter().GetResult();
+            // new Program().MainAsync(args).GetAwaiter().GetResult();
+        }
+
         public void CheckHat()
         {
             if (!Guild.HatRole.Members.Any()) return;
@@ -107,13 +114,6 @@ namespace Thierry
         public async Task Log(string msg)
         {
             await Task.Run(() => { Console.WriteLine("[" + DateTime.Now + "]" + " " + msg); });
-        }
-
-        public static void Main(string[] args)
-        {
-            Prog = new Program();
-            Prog.MainAsync(args).GetAwaiter().GetResult();
-            // new Program().MainAsync(args).GetAwaiter().GetResult();
         }
 
         public async Task MainAsync(string[] args)
