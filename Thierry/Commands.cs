@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -7,7 +8,7 @@ namespace Thierry
 {
     public class Commands : ModuleBase<SocketCommandContext>
     {
-        private readonly Program _prog = new Program();
+        private readonly List<HoekUser> _hoek = new List<HoekUser>();
 
         [Command("beepboop")]
         public async Task Beepboop()
@@ -19,7 +20,7 @@ namespace Thierry
         [RequireHatminRole]
         public async Task GiveHat(SocketGuildUser user)
         {
-            await _prog.GiveHat(user);
+            await Program.Prog.GiveHat(user);
         }
 
         [Command("help")]
@@ -28,6 +29,16 @@ namespace Thierry
             //print helptext
             //json help file maken
             await ReplyAsync("Ze heeft weeral gemorst, film het maar.");
+        }
+
+        [Command("indenhoek")]
+        public async Task InDenHoek(SocketGuildUser user)
+        {
+            await user.AddRoleAsync(Program.Guild.MutedRole);
+            foreach (var hoekUser in _hoek)
+                if (hoekUser == user)
+                    return;
+            _hoek.Add(new HoekUser(user));
         }
 
         [Command("lindsey")]
@@ -44,7 +55,7 @@ namespace Thierry
             if (Program.Guild.SocketGuild.GetRole(Program.Guild.HatRole.Id).Members.Any())
             {
                 await ReplyAsync($"{Program.Guild.LastHat.Mention} The Lord giveth, and the Lord taketh away.");
-                _prog.RemoveHat();
+                Program.Prog.RemoveHat();
             }
         }
 
@@ -59,6 +70,30 @@ namespace Thierry
         {
             await ReplyAsync(
                 "Als er al spanningen zijn geweest, dan zijn die nu allemaal weg, daarmee hebben we die prijs gewonnen eh.");
+        }
+
+        [Command("uitdenhoek")]
+        public async Task UitDenHoek(SocketGuildUser user)
+        {
+            HoekUser temp = null;
+
+            foreach (var hoekUser in _hoek)
+            {
+                if (hoekUser == user)
+                    temp = hoekUser;
+            }
+
+            if (temp == null) return;
+            temp.Votes++;
+
+            if (temp.Votes == 2)
+            {
+                await user.RemoveRoleAsync(Program.Guild.MutedRole);
+                _hoek.Remove(temp);
+                return;
+            }
+
+            await ReplyAsync($"{temp.User.Mention} currently has {temp.Votes} votes to be released.");
         }
     }
 }

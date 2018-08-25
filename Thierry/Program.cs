@@ -17,6 +17,7 @@ namespace Thierry
             new DiscordSocketClient(new DiscordSocketConfig {LogLevel = LogSeverity.Verbose});
 
         public static Guild Guild;
+        public static Program Prog;
         private static IConfigurationRoot _config;
         private static bool _idmode;
         private static bool _ready;
@@ -24,11 +25,6 @@ namespace Thierry
         private CommandServiceConfig _commandConfig;
         private CommandService _commands;
         private IServiceProvider _services;
-
-        public static void Main(string[] args)
-        {
-            new Program().MainAsync(args).GetAwaiter().GetResult();
-        }
 
         public void CheckHat()
         {
@@ -111,6 +107,13 @@ namespace Thierry
         public async Task Log(string msg)
         {
             await Task.Run(() => { Console.WriteLine("[" + DateTime.Now + "]" + " " + msg); });
+        }
+
+        public static void Main(string[] args)
+        {
+            Prog = new Program();
+            Prog.MainAsync(args).GetAwaiter().GetResult();
+            // new Program().MainAsync(args).GetAwaiter().GetResult();
         }
 
         public async Task MainAsync(string[] args)
