@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
+using Thierry.Properties;
 
 namespace Thierry
 {
@@ -35,12 +36,11 @@ namespace Thierry
         [RequireHatminRole]
         public async Task InDenHoek(SocketGuildUser user)
         {
-            foreach (var hoekUser in Hoek)
-                if (hoekUser == user)
-                {
-                    await ReplyAsync($"{user.Mention} staat al in den hoek.");
-                    return;
-                }
+            if (user.Roles.Contains(Program.Guild.MutedRole))
+            {
+                await ReplyAsync($"{user.Mention} staat al in den hoek.");
+                return;
+            }
 
             await user.AddRoleAsync(Program.Guild.MutedRole);
             Hoek.Add(new HoekUser(user));
@@ -83,23 +83,39 @@ namespace Thierry
         public async Task UitDenHoek(SocketGuildUser user)
         {
             HoekUser temp = null;
+            var voted = Context.User as SocketGuildUser;
 
-            foreach (var hoekUser in Hoek)
-                if (hoekUser == user)
-                    temp = hoekUser;
+            if (user.Roles.Contains(Program.Guild.MutedRole))
+                temp = Hoek.FirstOrDefault(x => x.User == user);
 
             if (temp == null) return;
+
+            if (temp.Voted.Contains(voted))
+            {
+                await ReplyAsync("Gij hebt al ne keer gevote trut!");
+                return;
+            }
+
             temp.Votes++;
+            temp.Voted.Add(voted);
+
 
             if (temp.Votes >= 2)
             {
                 await user.RemoveRoleAsync(Program.Guild.MutedRole);
-                Hoek.Remove(temp);
+                Hoek.RemoveAll(x => x.User == user);
                 await ReplyAsync($"{temp.User.Mention} has been released.");
                 return;
             }
 
             await ReplyAsync($"{temp.User.Mention} currently has {temp.Votes} votes to be released.");
+        }
+
+        [Command("version")]
+        [Alias("Version")]
+        public async Task Version()
+        {
+            await ReplyAsync($"Running on git commit {Resources.commithash}");
         }
     }
 }
