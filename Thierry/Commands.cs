@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
-using Thierry.Properties;
 
 namespace Thierry
 {
@@ -115,7 +116,18 @@ namespace Thierry
         [Alias("Version")]
         public async Task Version()
         {
-            await ReplyAsync($"Running on git commit {Resources.commithash}");
+            string version;
+            var assembly = Assembly.GetExecutingAssembly();
+
+            using (var stream = assembly.GetManifestResourceStream("Thierry.commithash.txt"))
+            {
+                using (var reader = new StreamReader(stream))
+                {
+                    version = reader.ReadToEnd();
+                }
+            }
+
+            await ReplyAsync($"Running on git commit {version}");
         }
     }
 }
