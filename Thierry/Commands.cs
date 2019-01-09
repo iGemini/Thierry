@@ -12,6 +12,13 @@ namespace Thierry
     {
         private static readonly List<HoekUser> Hoek = new List<HoekUser>();
 
+        [Command("anti9gag")]
+        [RequireHatminRole]
+        public async Task Anti9Gag()
+        {
+            Program.anti9Gag = !Program.anti9Gag;
+        }
+
         [Command("beepboop")]
         public async Task Beepboop()
         {

@@ -18,6 +18,7 @@ namespace Thierry
 
         public static Guild Guild;
         public static Program Prog;
+        public static bool anti9Gag = false;
         private static IConfigurationRoot _config;
         private static bool _idmode;
         private static bool _ready;
@@ -157,6 +158,13 @@ namespace Thierry
             // Log the message
             await Log(
                 $"Channel id: {msg.Channel.Id}, Channel name: {message.Channel.Name}, Author id: {message.Author.Id}, Author: {message.Author.Username}, Message: {message.Content}");
+            // anti 9gag
+            if (anti9Gag && message.Content.Contains("9gag"))
+            {
+                await message.DeleteAsync();
+                return;
+            }
+
             // Check if user is allowed to talk
             if ((message.Author as SocketGuildUser).Roles.Contains(Guild.MutedRole))
             {
