@@ -38,8 +38,7 @@ namespace Thierry
         {
             var json = JsonConvert.SerializeObject(Config);
 
-            var fileStream = new FileStream(@"config.json", FileMode.OpenOrCreate, FileAccess.ReadWrite);
-            using (var writer = new StreamWriter(fileStream))
+            using (var writer = new StreamWriter(@"config.json", false))
             {
                 writer.Write(json);
             }
