@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using System.Timers;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -19,6 +20,7 @@ namespace Thierry
 
         private CommandServiceConfig _commandConfig;
         private CommandService _commands;
+        private Timer _configSaver;
         private IServiceProvider _services;
 
         // Checks to see if more than 1 person has the hat, and removes extra hats if necessary
@@ -119,6 +121,10 @@ namespace Thierry
         {
             Configuration.LoadConfig();
 
+            _configSaver = new Timer {AutoReset = true, Interval = 300000};
+            _configSaver.Elapsed += TimerElapsed;
+            _configSaver.Start();
+
             _commandConfig = new CommandServiceConfig
             {
                 CaseSensitiveCommands = true,
@@ -202,6 +208,8 @@ namespace Thierry
             foreach (var guild in Client.Guilds) CheckHat(guild);
 
             _ready = true;
+
+            Configuration.SaveConfig();
         }
 
         public static void RemoveHat(SocketGuildUser user)
@@ -210,6 +218,11 @@ namespace Thierry
 
             user.RemoveRoleAsync(user.Guild.GetRole(g.HatRoleId));
             g.LastHatId = 0;
+        }
+
+        private static void TimerElapsed(object sender, ElapsedEventArgs e)
+        {
+            Configuration.SaveConfig();
         }
 
         // Because Discord does not automatically unmute someone after they've been given speaking rights.
