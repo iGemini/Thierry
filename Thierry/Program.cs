@@ -1,53 +1,43 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Thierry
 {
     public class Program
     {
-        public static readonly DiscordSocketClient Client =
+        private static bool _idMode;
+        private static bool _ready;
+
+        private static readonly DiscordSocketClient Client =
             new DiscordSocketClient(new DiscordSocketConfig {LogLevel = LogSeverity.Verbose});
 
-        public static Guild Guild;
-        public static Program Prog;
-        public static bool anti9Gag = false;
-        private static IConfigurationRoot _config;
-        private static bool _idmode;
-        private static bool _ready;
-        private static string _token;
         private CommandServiceConfig _commandConfig;
         private CommandService _commands;
         private IServiceProvider _services;
 
-        public static void Main(string[] args)
+        // Checks to see if more than 1 person has the hat, and removes extra hats if necessary
+        private void CheckHat(SocketGuild guild)
         {
-            Prog = new Program();
-            Prog.MainAsync(args).GetAwaiter().GetResult();
-            // new Program().MainAsync(args).GetAwaiter().GetResult();
-        }
-
-        public void CheckHat()
-        {
-            if (!Guild.HatRole.Members.Any()) return;
-            Guild.LastHat = Guild.HatRole.Members.Last();
-            Guild.HatRole.Members.AsParallel().ForAll(
+            if (guild == null) return;
+            var g = Configuration.Config.Guilds.First(x => x.SocketGuildId == guild.Id);
+            if (g.HatRoleId == 0) return;
+            g.LastHatId = guild.GetRole(g.HatRoleId).Members.Last().Id;
+            guild.GetRole(g.HatRoleId).Members.AsParallel().ForAll(
                 async x =>
                 {
-                    if (x == Guild.LastHat) return;
+                    if (x.Id == g.LastHatId) return;
                     await Log($"User id: {x.Id}, Username: {x.Username}");
-                    await x.RemoveRoleAsync(Guild.HatRole);
+                    await x.RemoveRoleAsync(guild.GetRole(g.HatRoleId));
                 });
         }
 
-        public async void GetIDs()
+        private async void GetIDs()
         {
             foreach (var guild in Client.Guilds)
             {
@@ -67,62 +57,67 @@ namespace Thierry
             }
         }
 
-        public async Task GiveHat(SocketGuildUser user)
+        public static async Task GiveHat(SocketGuildUser user)
         {
-            Guild.HatBeingMoved = true;
-            if (Guild.LastHat != null)
+            var g = Configuration.Config.Guilds.First(x => x.SocketGuildId == user.Guild.Id);
+            g.HatBeingMoved = true;
+            if (g.LastHatId != 0)
             {
-                await Guild.LastHat.RemoveRoleAsync(Guild.HatRole);
-                UpdateVoiceChannel();
+                await user.Guild.GetRole(g.HatRoleId).Members.First().RemoveRoleAsync(user.Guild.GetRole(g.HatRoleId));
+                UpdateVoiceChannel(user.Guild);
             }
 
-            Guild.LastHat = Guild.SocketGuild.GetUser(user.Id);
-            await Guild.LastHat.AddRoleAsync(Guild.HatRole);
-            UpdateVoiceChannel();
+            g.LastHatId = user.Id;
+            await user.AddRoleAsync(user.Guild.GetRole(g.HatRoleId));
+            UpdateVoiceChannel(user.Guild);
         }
 
-        public async Task GuildMemberUpdated(SocketGuildUser before, SocketGuildUser after)
+        private async Task GuildMemberUpdated(SocketGuildUser before, SocketGuildUser after)
         {
             if (!_ready) return;
-            if (Guild.HatBeingMoved) return;
+            var g = Configuration.Config.Guilds.First(x => x.SocketGuildId == before.Guild.Id);
 
-            if (before.Id == Guild.LastHat?.Id && !after.Roles.Contains(Guild.HatRole))
+            if (g.HatBeingMoved) return;
+
+            if (before.Id == g.LastHatId && !after.Roles.Contains(after.Guild.GetRole(g.HatRoleId)))
             {
                 await Log($"Hat illegally removed from {after.Username}. Reassigning hat to {after.Username}.");
-                await after.AddRoleAsync(Guild.HatRole);
+                await after.AddRoleAsync(after.Guild.GetRole(g.HatRoleId));
             }
 
-            if (after.Roles.Contains(Guild.HatRole) && after.Id != Guild.LastHat?.Id)
+            if (after.Roles.Contains(after.Guild.GetRole(g.HatRoleId)) && after.Id != g.LastHatId)
             {
                 await Log($"Hat illegally given to {after.Username}. Removing hat from {after.Username}.");
-                await after.RemoveRoleAsync(Guild.HatRole);
+                await after.RemoveRoleAsync(after.Guild.GetRole(g.HatRoleId));
             }
 
-            Guild.HatBeingMoved = false;
+            g.HatBeingMoved = false;
         }
 
-        public async Task InstallCommands()
+        private async Task InstallCommands()
         {
             // Discover all of the commands in this assembly and load them.
             await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
         }
 
-        public async Task Log(LogMessage msg)
+        private async Task Log(LogMessage msg)
         {
             await Log("[API] [" + msg.Severity + "] [" + msg.Source + "] " + msg.Message);
         }
 
-        public async Task Log(string msg)
+        private async Task Log(string msg)
         {
             await Task.Run(() => { Console.WriteLine("[" + DateTime.Now + "]" + " " + msg); });
         }
 
-        public async Task MainAsync(string[] args)
+        public static void Main(string[] args)
         {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", true, true);
-            _config = builder.Build();
+            new Program().MainAsync(args).GetAwaiter().GetResult();
+        }
+
+        private async Task MainAsync(string[] args)
+        {
+            Configuration.LoadConfig();
 
             _commandConfig = new CommandServiceConfig
             {
@@ -136,7 +131,7 @@ namespace Thierry
 
             await InstallCommands();
 
-            if (args.Length != 0 && args[0] == "-id") _idmode = true;
+            if (args.Length != 0 && args[0] == "-id") _idMode = true;
 
             // Set up events.
             Client.Log += Log;
@@ -144,29 +139,31 @@ namespace Thierry
             Client.MessageReceived += MessageReceived;
             Client.GuildMemberUpdated += GuildMemberUpdated;
 
-            _token = _config?["token"];
             await Client.StartAsync();
-            await Client.LoginAsync(TokenType.Bot, _token);
+            await Client.LoginAsync(TokenType.Bot, Configuration.Config.Token);
 
             await Task.Delay(-1);
         }
 
-        public async Task MessageReceived(SocketMessage msg)
+        private async Task MessageReceived(SocketMessage msg)
         {
             // Don't process the command if it was a System Message
             if (!(msg is SocketUserMessage message) || message.Author.IsBot) return;
+
+            var sgUser = (SocketGuildUser) message.Author;
+            var g = Configuration.Config.Guilds.First(x => x.SocketGuildId == sgUser.Guild.Id);
             // Log the message
             await Log(
                 $"Channel id: {msg.Channel.Id}, Channel name: {message.Channel.Name}, Author id: {message.Author.Id}, Author: {message.Author.Username}, Message: {message.Content}");
-            // anti 9gag
-            if (anti9Gag && message.Content.Contains("9gag"))
+            // check bad words
+            if (g.BadWordsEnabled && g.BadWords.Any(x => message.Content.Contains(x)))
             {
                 await message.DeleteAsync();
                 return;
             }
 
             // Check if user is allowed to talk
-            if ((message.Author as SocketGuildUser).Roles.Contains(Guild.MutedRole))
+            if (sgUser.Roles.Contains(sgUser.Guild.GetRole(g.MutedRoleId)))
             {
                 await msg.Channel.SendMessageAsync("Zwijgen trut!");
                 return;
@@ -190,11 +187,11 @@ namespace Thierry
             }
         }
 
-        public async Task Ready()
+        private async Task Ready()
         {
             await Log("Ready for action!");
 
-            if (_idmode)
+            if (_idMode)
             {
                 GetIDs();
                 await Log("Press any key to exit.");
@@ -202,33 +199,31 @@ namespace Thierry
                 return;
             }
 
-            Guild = new Guild(
-                ulong.Parse(_config?["guildId"]),
-                ulong.Parse(_config?["mutedRoleId"]),
-                ulong.Parse(_config?["hatRoleId"]),
-                ulong.Parse(_config?["hatminRoleId"]),
-                ulong.Parse(_config?["afkChannelId"])
-            );
-
-            CheckHat();
+            foreach (var guild in Client.Guilds) CheckHat(guild);
 
             _ready = true;
         }
 
-        public void RemoveHat()
+        public static void RemoveHat(SocketGuildUser user)
         {
-            Guild.LastHat.RemoveRoleAsync(Guild.HatRole);
-            Guild.LastHat = null;
+            var g = Configuration.Config.Guilds.First(x => x.SocketGuildId == user.Guild.Id);
+
+            user.RemoveRoleAsync(user.Guild.GetRole(g.HatRoleId));
+            g.LastHatId = 0;
         }
 
         // Because Discord does not automatically unmute someone after they've been given speaking rights.
-        public async void UpdateVoiceChannel()
+        private static async void UpdateVoiceChannel(SocketGuild guild)
         {
-            if (!Guild.LastHat.Roles.Contains(Guild.MutedRole)) return;
-            var channel = Guild.LastHat.VoiceChannel;
+            var g = Configuration.Config.Guilds.First(x => x.SocketGuildId == guild.Id);
+
+            if (!guild.Users.First(x => x.Id == g.LastHatId).Roles.Contains(guild.GetRole(g.MutedRoleId))) return;
+            var channel = guild.Users.First(x => x.Id == g.LastHatId).VoiceChannel;
             if (channel == null) return;
-            await Guild.LastHat.ModifyAsync(x => x.Channel = Guild.AfkVoiceChannel);
-            await Guild.LastHat.ModifyAsync(x => x.Channel = channel);
+
+            await guild.Users.First(x => x.Id == g.LastHatId)
+                .ModifyAsync(x => x.Channel = guild.GetVoiceChannel(g.AfkVoiceChannelId));
+            await guild.Users.First(x => x.Id == g.LastHatId).ModifyAsync(x => x.Channel = channel);
         }
     }
 }

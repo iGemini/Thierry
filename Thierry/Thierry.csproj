@@ -10,14 +10,12 @@
     <EmbeddedResource Include="commithash.txt" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Discord.Net" Version="2.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.0.0-preview.18572.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="3.0.0-preview.18572.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.0.0-preview.18572.1" />
+    <PackageReference Include="Discord.Net" Version="2.0.2-dev-01059" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <None Update="config.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
