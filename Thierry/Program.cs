@@ -210,6 +210,8 @@ namespace Thierry
             _ready = true;
 
             Configuration.SaveConfig();
+
+            await Client.SetActivityAsync(new Game("Lindsey! Lindsey! Lindsey!", ActivityType.CustomStatus));
         }
 
         public static void RemoveHat(SocketGuildUser user)
