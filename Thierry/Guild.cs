@@ -1,30 +1,25 @@
-﻿using Discord.WebSocket;
+﻿using System.Collections.Generic;
 
 namespace Thierry
 {
     public class Guild
     {
-        public Guild(ulong guildId, ulong mutedRoleId, ulong hatRoleId, ulong hatminRoleId, ulong afkChannelId)
-        {
-            SocketGuild = Program.Client.GetGuild(guildId);
-            MutedRole = SocketGuild.GetRole(mutedRoleId);
-            HatRole = SocketGuild.GetRole(hatRoleId);
-            HatminRole = SocketGuild.GetRole(hatminRoleId);
-            AfkVoiceChannel = SocketGuild.GetVoiceChannel(afkChannelId);
-        }
+        public ulong AfkVoiceChannelId { get; set; }
 
-        public SocketVoiceChannel AfkVoiceChannel { get; }
+        public List<string> BadWords { get; set; }
+
+        public bool BadWordsEnabled { get; set; }
 
         public bool HatBeingMoved { get; set; }
 
-        public SocketRole HatminRole { get; }
+        public ulong HatminRoleId { get; set; }
 
-        public SocketRole HatRole { get; }
+        public ulong HatRoleId { get; set; }
 
-        public SocketGuildUser LastHat { get; set; }
+        public ulong LastHatId { get; set; }
 
-        public SocketRole MutedRole { get; }
+        public ulong MutedRoleId { get; set; }
 
-        public SocketGuild SocketGuild { get; }
+        public ulong SocketGuildId { get; set; }
     }
 }

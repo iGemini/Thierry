@@ -5,19 +5,13 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Discord.Commands;
 using Discord.WebSocket;
+using Thierry.Preconditions;
 
-namespace Thierry
+namespace Thierry.Commands
 {
     public class Commands : ModuleBase<SocketCommandContext>
     {
         private static readonly List<HoekUser> Hoek = new List<HoekUser>();
-
-        [Command("anti9gag")]
-        [RequireHatminRole]
-        public async Task Anti9Gag()
-        {
-            Program.anti9Gag = !Program.anti9Gag;
-        }
 
         [Command("beepboop")]
         public async Task Beepboop()
@@ -29,7 +23,7 @@ namespace Thierry
         [RequireHatminRole]
         public async Task GiveHat(SocketGuildUser user)
         {
-            await Program.Prog.GiveHat(user);
+            await Program.GiveHat(user);
         }
 
         [Command("help")]
@@ -44,13 +38,14 @@ namespace Thierry
         [RequireHatminRole]
         public async Task InDenHoek(SocketGuildUser user)
         {
-            if (user.Roles.Contains(Program.Guild.MutedRole))
+            var g = Configuration.Config.Guilds.First(x => x.SocketGuildId == Context.Guild.Id);
+            if (user.Roles.Contains(Context.Guild.GetRole(g.MutedRoleId)))
             {
                 await ReplyAsync($"{user.Mention} staat al in den hoek.");
                 return;
             }
 
-            await user.AddRoleAsync(Program.Guild.MutedRole);
+            await user.AddRoleAsync(Context.Guild.GetRole(g.MutedRoleId));
             Hoek.Add(new HoekUser(user));
             await ReplyAsync($"{user.Mention} staat nu in den hoek.");
         }
@@ -66,10 +61,12 @@ namespace Thierry
         [RequireHatminRole]
         public async Task RemoveHat()
         {
-            if (Program.Guild.SocketGuild.GetRole(Program.Guild.HatRole.Id).Members.Any())
+            var g = Configuration.Config.Guilds.First(x => x.SocketGuildId == Context.Guild.Id);
+            if (Context.Guild.GetRole(g.HatRoleId).Members.Any())
             {
-                await ReplyAsync($"{Program.Guild.LastHat.Mention} The Lord giveth, and the Lord taketh away.");
-                Program.Prog.RemoveHat();
+                await ReplyAsync(
+                    $"{Context.Guild.Users.First(x => x.Id == g.LastHatId).Mention} The Lord giveth, and the Lord taketh away.");
+                Program.RemoveHat(Context.Guild.Users.First(x => x.Id == g.LastHatId));
             }
         }
 
@@ -90,10 +87,12 @@ namespace Thierry
         [RequireHatminRole]
         public async Task UitDenHoek(SocketGuildUser user)
         {
+            var g = Configuration.Config.Guilds.First(x => x.SocketGuildId == Context.Guild.Id);
+
             HoekUser temp = null;
             var voted = Context.User as SocketGuildUser;
 
-            if (user.Roles.Contains(Program.Guild.MutedRole))
+            if (user.Roles.Contains(Context.Guild.GetRole(g.MutedRoleId)))
                 temp = Hoek.FirstOrDefault(x => x.User == user);
 
             if (temp == null) return;
@@ -110,7 +109,7 @@ namespace Thierry
 
             if (temp.Votes >= 2)
             {
-                await user.RemoveRoleAsync(Program.Guild.MutedRole);
+                await user.RemoveRoleAsync(Context.Guild.GetRole(g.MutedRoleId));
                 Hoek.RemoveAll(x => x.User == user);
                 await ReplyAsync($"{temp.User.Mention} has been released.");
                 return;

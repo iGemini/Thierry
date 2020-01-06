@@ -16,6 +16,12 @@ namespace Thierry
         public List<SocketGuildUser> Voted { get; set; }
         public int Votes { get; set; }
 
+        public override bool Equals(object obj)
+        {
+            var temp = obj as SocketGuildUser;
+            return User == temp;
+        }
+
         public static bool operator ==(HoekUser hoekUser, SocketGuildUser user)
         {
             return hoekUser.User == user;
@@ -24,12 +30,6 @@ namespace Thierry
         public static bool operator !=(HoekUser hoekUser, SocketGuildUser user)
         {
             return hoekUser.User != user;
-        }
-
-        public override bool Equals(object obj)
-        {
-            var temp = obj as SocketGuildUser;
-            return User == temp;
         }
     }
 }
