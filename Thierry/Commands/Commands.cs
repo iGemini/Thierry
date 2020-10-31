@@ -73,7 +73,9 @@ namespace Thierry.Commands
         [Command("Thierry")]
         public async Task Thierry(SocketGuildUser user)
         {
-            await ReplyAsync($"{user.Mention}! {user.Mention}! {user.Mention}!");
+            await ReplyAsync($"{user.Mention}!");
+            await ReplyAsync($"{user.Mention}!");
+            await ReplyAsync($"{user.Mention}!");
         }
 
         [Command("TRUT")]
